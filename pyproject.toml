@@ -5,10 +5,10 @@ description = "Manages your home directory."
 readme = "README.md"
 authors = [{ name = "Jesse Stricker" }]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = ["click>=8.3.1"]
 
 [project.scripts]
-kontor = "kontor:main"
+kontor = "kontor.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.18,<0.10.0"]

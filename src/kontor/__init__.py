@@ -1,42 +1,18 @@
-import argparse
 import logging
-from dataclasses import dataclass
+from pathlib import Path
 
-_logger = logging.getLogger()
-
-
-def main() -> None:
-    _setup_logging()
-
-    cli = _parse_cli()
-    if cli.debug:
-        _logger.setLevel(logging.DEBUG)
-    _logger.debug("cli=%r", cli)
-
-    _logger.info("Hello from kontor!")
+_logger = logging.getLogger(__name__)
 
 
-def _setup_logging() -> None:
-    logging.basicConfig(
-        format="%(levelname)s: %(message)s",
-        level=logging.INFO,
-    )
+class Kontor:
+    def __init__(self) -> None:
+        pass
 
+    def __repr__(self) -> str:
+        return f"{__class__.__qualname__}({self.__dict__})"
 
-def _parse_cli() -> _Cli:
-    parser = argparse.ArgumentParser(
-        description="Manages your home directory.",
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="print information helpful for debugging",
-    )
+    def link(self, file: Path) -> None:
+        _logger.info(f"linking {file!r} into kontor...")
 
-    args = parser.parse_args()
-    return _Cli(**vars(args))
-
-
-@dataclass
-class _Cli:
-    debug: bool
+    def sync(self) -> None:
+        _logger.info("synchronizing kontor...")
