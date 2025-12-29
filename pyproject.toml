@@ -1,0 +1,15 @@
+[project]
+name = "kontor"
+version = "0.0.0.dev0"
+description = "Manages your home directory."
+readme = "README.md"
+authors = [{ name = "Jesse Stricker" }]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+kontor = "kontor:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
