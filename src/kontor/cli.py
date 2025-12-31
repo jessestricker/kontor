@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 @click.group(help="Manages your home directory.")
 @click.option("--debug/--no-debug", help="Print information useful for debugging.")
 @click.pass_context
-def main(ctx: click.Context, debug: bool) -> None:
+def main(ctx: click.Context, *, debug: bool) -> None:
     # setup logging
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
     if debug:
