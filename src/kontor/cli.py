@@ -31,6 +31,13 @@ def link(kontor: Kontor, file: Path) -> None:
     kontor.link(file)
 
 
+# called 'list_command' to not shadow builtin 'list'
+@main.command(help="List all files in the kontor.")
+@click.pass_obj
+def list_command(kontor: Kontor) -> None:
+    kontor.list()
+
+
 @main.command(help="Synchronizes the home directory with the kontor.")
 @click.pass_obj
 def sync(kontor: Kontor) -> None:

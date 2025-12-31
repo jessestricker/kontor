@@ -3,9 +3,13 @@ import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
+import click
 import dacite
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 _CONFIG_FILE_NAME = ".kontor.toml"
 _KONTOR_DIR_NAME = ".kontor"
@@ -25,6 +29,11 @@ class Kontor:
     @property
     def _profile_dir(self) -> Path:
         return self._kontor_dir / self._config.profile
+
+    def _files(self) -> Iterator[Path]:
+        for dir_path, _, file_names in self._profile_dir.walk():
+            for file_name in file_names:
+                yield dir_path / file_name
 
     def __repr__(self) -> str:
         attrs = (f"{name}={value!r}" for name, value in self.__dict__.items())
@@ -62,6 +71,12 @@ class Kontor:
         kontor_file.parent.mkdir(parents=True, exist_ok=True)
         home_file.move(kontor_file)
         home_file.symlink_to(kontor_file)
+
+    def list(self) -> None:
+        _logger.info("listing files in the kontor...")
+        for file_path in self._files():
+            relative_path = file_path.relative_to(self._profile_dir)
+            click.echo(relative_path)
 
     def sync(self) -> None:
         _logger.info("synchronizing kontor...")
