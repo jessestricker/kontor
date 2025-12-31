@@ -19,3 +19,7 @@ dev = ["ruff>=0.14.10"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
+
+[tool.ruff]
+lint.select = ["ALL"]
+lint.ignore = ["COM812", "D"]
