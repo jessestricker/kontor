@@ -1,20 +1,24 @@
+import errno
 import logging
 import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 import click
 import dacite
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from typing import Literal, Self
 
 _CONFIG_FILE_NAME = ".kontor.toml"
 _KONTOR_DIR_NAME = ".kontor"
 
 _logger = logging.getLogger(__name__)
+
+type _SyncState = Literal["synced", "missing", "conflict"]
 
 
 class Kontor:
@@ -78,9 +82,53 @@ class Kontor:
             relative_path = file_path.relative_to(self._profile_dir)
             click.echo(relative_path)
 
-    def sync(self) -> None:
-        _logger.info("synchronizing kontor...")
-        raise NotImplementedError
+    def sync(self) -> bool:
+        all_ok = True
+        for kontor_file in self._files():
+            if not self._sync_file(kontor_file):
+                all_ok = False
+                # but do continue with syncing files
+
+        return all_ok
+
+    def _sync_file(self, kontor_file: Path) -> bool:
+        relative_path = kontor_file.relative_to(self._profile_dir)
+        home_file = self._home_dir / relative_path
+        state = self._get_sync_state(kontor_file, home_file)
+
+        match state:
+            case "synced":
+                click.echo(f"{home_file} - {click.style('OK', fg='green')}")
+                return True
+
+            case "missing":
+                home_file.parent.mkdir(parents=True, exist_ok=True)
+                home_file.symlink_to(kontor_file)
+                click.echo(f"{home_file} - {click.style('SYNCED', fg='blue')}")
+                return True
+
+            case "conflict":
+                click.echo(f"{home_file} - {click.style('CONFLICT', fg='red')}")
+                return False
+
+    def _get_sync_state(self, kontor_file: Path, home_file: Path) -> _SyncState:
+        try:
+            home_file_target = home_file.readlink()
+        except FileNotFoundError:
+            # home file does not exist
+            return "missing"
+        except OSError as exc:
+            if exc.errno == errno.EINVAL:
+                # home file is not a symbolic link
+                return "conflict"
+
+            raise
+
+        if home_file_target != kontor_file:
+            # home file is a link but does not point to kontor file
+            return "conflict"
+
+        return "synced"
 
 
 def _resolve_parent(path: Path) -> Path:

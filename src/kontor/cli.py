@@ -40,5 +40,6 @@ def list_command(kontor: Kontor) -> None:
 
 @main.command(help="Synchronizes the home directory with the kontor.")
 @click.pass_obj
-def sync(kontor: Kontor) -> None:
-    kontor.sync()
+def sync(kontor: Kontor) -> int:
+    ok = kontor.sync()
+    return 0 if ok else 1
