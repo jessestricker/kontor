@@ -26,6 +26,10 @@ class Kontor:
         self._home_dir = Path.home()
         self._config = _Config.from_file(self._home_dir / _CONFIG_FILE_NAME)
 
+    def __repr__(self) -> str:
+        attrs = (f"{name}={value!r}" for name, value in self.__dict__.items())
+        return f"{self.__class__.__qualname__}({', '.join(attrs)})"
+
     @property
     def _kontor_dir(self) -> Path:
         return self._home_dir / _KONTOR_DIR_NAME
@@ -39,30 +43,35 @@ class Kontor:
             for file_name in file_names:
                 yield dir_path / file_name
 
-    def __repr__(self) -> str:
-        attrs = (f"{name}={value!r}" for name, value in self.__dict__.items())
-        return f"{self.__class__.__qualname__}({', '.join(attrs)})"
+    def _kontor_file(self, home_file: Path) -> Path:
+        relative_path = home_file.relative_to(self._home_dir)
+        return self._profile_dir / relative_path
 
-    def link(self, home_file: Path) -> None:
+    def _home_file(self, kontor_file: Path) -> Path:
+        relative_path = kontor_file.relative_to(self._profile_dir)
+        return self._home_dir / relative_path
+
+    def _validate_home_file_path(self, home_file: Path) -> Path:
         # resolve home file's parent dir, removing '..' segments
         home_file = _resolve_parent(home_file)
-        _logger.debug("home_file=%r", home_file)
 
         # fail if home file path is in kontor dir
         if home_file.is_relative_to(self._kontor_dir):
             msg = "file must not be from kontor directory"
             raise ValueError(msg)
 
-        # get relative path to home dir
-        # also fail if home file path is not in home dir
-        try:
-            relative_path = home_file.relative_to(self._home_dir)
-        except ValueError:
+        # fail if home file is not in home dir
+        if not home_file.is_relative_to(self._home_dir):
             msg = "file must be from home directory"
-            raise ValueError(msg) from None
+            raise ValueError(msg)
 
-        # build kontor file path
-        kontor_file = self._profile_dir / relative_path
+        return home_file
+
+    def link(self, home_file: Path) -> None:
+        home_file = self._validate_home_file_path(home_file)
+        _logger.debug("home_file=%r", home_file)
+
+        kontor_file = self._kontor_file(home_file)
         _logger.debug("kontor_file=%r", kontor_file)
 
         # fail if home file is already linked into kontor dir
@@ -75,6 +84,20 @@ class Kontor:
         kontor_file.parent.mkdir(parents=True, exist_ok=True)
         home_file.move(kontor_file)
         home_file.symlink_to(kontor_file)
+
+    def unlink(self, home_file: Path) -> None:
+        home_file = self._validate_home_file_path(home_file)
+        _logger.debug("home_file=%r", home_file)
+
+        kontor_file = self._kontor_file(home_file)
+        _logger.debug("kontor_file=%r", kontor_file)
+
+        state = self._get_sync_state(kontor_file, home_file)
+        if state != "synced":
+            msg = "file not synced with kontor"
+            raise ValueError(msg)
+
+        kontor_file.replace(home_file)
 
     def list(self) -> None:
         _logger.info("listing files in the kontor...")
@@ -92,8 +115,7 @@ class Kontor:
         return all_ok
 
     def _sync_file(self, kontor_file: Path) -> bool:
-        relative_path = kontor_file.relative_to(self._profile_dir)
-        home_file = self._home_dir / relative_path
+        home_file = self._home_file(kontor_file)
         state = self._get_sync_state(kontor_file, home_file)
 
         match state:

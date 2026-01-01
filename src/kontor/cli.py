@@ -31,6 +31,13 @@ def link(kontor: Kontor, file: Path) -> None:
     kontor.link(file)
 
 
+@main.command(help="Removes a file from the kontor.")
+@click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.pass_obj
+def unlink(kontor: Kontor, file: Path) -> None:
+    kontor.unlink(file)
+
+
 # called 'list_command' to not shadow builtin 'list'
 @main.command(help="List all files in the kontor.")
 @click.pass_obj
